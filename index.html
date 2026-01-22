@@ -112,6 +112,65 @@
             display: none;
         }
 
+        .quantity-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .quantity-label {
+            flex-shrink: 0;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f8f9ff;
+            padding: 8px 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .quantity-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quantity-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .quantity-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quantity-display {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            min-width: 30px;
+            text-align: center;
+        }
+
         input[type="text"] {
             width: 100%;
             padding: 12px 15px;
@@ -260,6 +319,16 @@
             margin-left: 6px;
         }
 
+        .history-quantity {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #ff9800;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
         .history-date {
             font-size: 12px;
             color: #999;
@@ -336,6 +405,15 @@
             </div>
         </div>
 
+        <div class="quantity-selector">
+            <span class="quantity-label">수량</span>
+            <div class="quantity-controls">
+                <button class="quantity-btn" onclick="changeQuantity(-1)">−</button>
+                <span class="quantity-display" id="quantity-display">1</span>
+                <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
+            </div>
+        </div>
+
         <div class="input-group">
             <label for="drink-input">음료 이름</label>
             <input type="text" id="drink-input" placeholder="음료 이름을 입력하세요" autocomplete="off">
@@ -372,10 +450,10 @@
             "더치바닐라라떼": { hot: 6500 },
             "콜드브루": { iced: 4500 },
             "돌체라떼": { hot: 5000 },
-            "더치페이맛아메리카노": { hot: 4500, iced: 4500 },
-            "더치페이맛라떼": { hot: 5000, iced: 5000 },
-            "더치페이맛바닐라라떼": { hot: 5500, iced: 5500 },
-            "더치페이맛헤이즐넛라떼": { hot: 5500, iced: 5500 },
+            "디카페인아메리카노": { hot: 4500, iced: 4500 },
+            "디카페인라떼": { hot: 5000, iced: 5000 },
+            "디카페인바닐라라떼": { hot: 5500, iced: 5500 },
+            "디카페인헤이즐넛라떼": { hot: 5500, iced: 5500 },
             "에스프레소": { hot: 4000 },
             "에스프레소마끼아또": { hot: 4500 },
             "에스프레소콘파나": { hot: 4500 },
@@ -416,7 +494,6 @@
             
             // SMOOTHIE
             "요거트블루베리스무디": { iced: 5500 },
-            "요거트블루베리스무디": { iced: 5500 },
             "요거트망고스무디": { iced: 5500 },
             "딸기스무디": { iced: 6000 }
         };
@@ -428,6 +505,7 @@
         let data = loadData();
         let selectedDrink = null;
         let selectedPrice = null;
+        let quantity = 1;
 
         function loadData() {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -458,6 +536,12 @@
 
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function changeQuantity(delta) {
+            quantity = Math.max(1, Math.min(99, quantity + delta));
+            document.getElementById('quantity-display').textContent = quantity;
+            updatePricePreview();
         }
 
         function updateDisplay() {
@@ -495,6 +579,7 @@
                             <div class="history-drink">
                                 ${item.name}
                                 <span class="history-temp">${item.temp === 'hot' ? 'HOT' : 'ICED'}</span>
+                                ${item.quantity > 1 ? `<span class="history-quantity">×${item.quantity}</span>` : ''}
                             </div>
                             <div class="history-date">${item.date}</div>
                         </div>
@@ -532,10 +617,14 @@
                 if (price !== undefined) {
                     selectedDrink = drinkName;
                     selectedPrice = price;
+                    const totalPrice = price * quantity;
+                    
                     pricePreview.innerHTML = `
                         <span style="color: #333;">${drinkName}</span>
+                        ${quantity > 1 ? `<span style="color: #ff9800; margin: 0 5px;">×${quantity}</span>` : ''}
                         <span style="margin: 0 10px;">•</span>
-                        <span style="color: #667eea; font-size: 18px; font-weight: 700;">${price.toLocaleString()}원</span>
+                        <span style="color: #667eea; font-size: 18px; font-weight: 700;">${totalPrice.toLocaleString()}원</span>
+                        ${quantity > 1 ? `<span style="color: #999; font-size: 12px; margin-left: 5px;">(${price.toLocaleString()}원/개)</span>` : ''}
                         <span style="margin: 0 10px;">•</span>
                         <span style="color: #999; font-size: 12px;">${temp === 'hot' ? '🔥 HOT' : '❄️ ICED'}</span>
                     `;
@@ -563,16 +652,18 @@
             }
             
             const temp = getSelectedTemp();
+            const totalPrice = selectedPrice * quantity;
             
             // 잔액 차감
-            data.balance -= selectedPrice;
+            data.balance -= totalPrice;
             
             // 히스토리 추가
             const now = new Date();
             data.history.unshift({
                 name: selectedDrink,
-                price: selectedPrice,
+                price: totalPrice,
                 temp: temp,
+                quantity: quantity,
                 date: `${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
             });
             
@@ -582,6 +673,8 @@
             
             // 입력 필드 초기화
             document.getElementById('drink-input').value = '';
+            quantity = 1;
+            document.getElementById('quantity-display').textContent = quantity;
             updatePricePreview();
         }
 
