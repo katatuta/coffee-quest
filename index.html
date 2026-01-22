@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="커피퀘스트 서울점 월간 이용권 관리 앱">
+    <meta name="theme-color" content="#667eea">
     <title>커피퀘스트 이용권 관리</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="커피퀘스트">
+    
     <style>
         * {
             margin: 0;
@@ -363,6 +375,68 @@
             margin-left: 5px;
         }
 
+        /* 설치 프롬프트 스타일 */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            gap: 15px;
+            max-width: 90%;
+            z-index: 1000;
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt-icon {
+            font-size: 32px;
+        }
+
+        .install-prompt-text {
+            flex: 1;
+        }
+
+        .install-prompt-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .install-prompt-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .install-prompt-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .install-prompt-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+            margin: 0;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -374,6 +448,11 @@
 
             h1 {
                 font-size: 22px;
+            }
+
+            .install-prompt {
+                flex-direction: column;
+                text-align: center;
             }
         }
     </style>
@@ -432,6 +511,17 @@
                 <div class="empty-history">아직 사용 내역이 없습니다</div>
             </div>
         </div>
+    </div>
+
+    <!-- 앱 설치 프롬프트 -->
+    <div class="install-prompt" id="install-prompt">
+        <div class="install-prompt-icon">☕</div>
+        <div class="install-prompt-text">
+            <div class="install-prompt-title">앱으로 설치하기</div>
+            <div class="install-prompt-subtitle">홈 화면에 추가해서 편하게 사용하세요</div>
+        </div>
+        <button class="install-prompt-btn" id="install-btn">설치</button>
+        <button class="install-prompt-close" onclick="closeInstallPrompt()">×</button>
     </div>
 
     <script>
@@ -507,15 +597,45 @@
         let selectedPrice = null;
         let quantity = 1;
 
+        // PWA 설치 프롬프트
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-prompt').classList.add('show');
+        });
+
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response: ${outcome}`);
+                deferredPrompt = null;
+                document.getElementById('install-prompt').classList.remove('show');
+            }
+        });
+
+        function closeInstallPrompt() {
+            document.getElementById('install-prompt').classList.remove('show');
+        }
+
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => console.log('ServiceWorker registered'))
+                    .catch(err => console.log('ServiceWorker registration failed:', err));
+            });
+        }
+
         function loadData() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // 월이 바뀌었는지 확인
                 const currentMonth = new Date().getMonth();
                 const currentYear = new Date().getFullYear();
                 if (parsed.month !== currentMonth || parsed.year !== currentYear) {
-                    // 월이 바뀌면 초기화하되, 이월금 처리
                     const carryOver = parsed.balance < 0 ? parsed.balance : 0;
                     return {
                         balance: 50000 + carryOver,
@@ -549,15 +669,12 @@
             const monthInfoEl = document.getElementById('month-info');
             const warningContainer = document.getElementById('warning-container');
             
-            // 잔액 표시
             balanceEl.textContent = data.balance.toLocaleString() + '원';
             balanceEl.style.color = data.balance < 0 ? '#ff5252' : 'white';
             
-            // 월 정보
             const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
             monthInfoEl.textContent = `${data.year}년 ${monthNames[data.month]}`;
             
-            // 초과 사용 경고
             if (data.balance < 0) {
                 warningContainer.innerHTML = `
                     <div class="warning">
@@ -568,7 +685,6 @@
                 warningContainer.innerHTML = '';
             }
             
-            // 히스토리 표시
             const historyList = document.getElementById('history-list');
             if (data.history.length === 0) {
                 historyList.innerHTML = '<div class="empty-history">아직 사용 내역이 없습니다</div>';
@@ -609,7 +725,6 @@
                 return;
             }
             
-            // 메뉴에서 찾기
             if (menu[drinkName]) {
                 const prices = menu[drinkName];
                 const price = prices[temp];
@@ -654,10 +769,8 @@
             const temp = getSelectedTemp();
             const totalPrice = selectedPrice * quantity;
             
-            // 잔액 차감
             data.balance -= totalPrice;
             
-            // 히스토리 추가
             const now = new Date();
             data.history.unshift({
                 name: selectedDrink,
@@ -667,11 +780,9 @@
                 date: `${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
             });
             
-            // 저장 및 화면 업데이트
             saveData();
             updateDisplay();
             
-            // 입력 필드 초기화
             document.getElementById('drink-input').value = '';
             quantity = 1;
             document.getElementById('quantity-display').textContent = quantity;
@@ -687,7 +798,6 @@
             }
         }
 
-        // 온도 선택 버튼 이벤트
         document.querySelectorAll('.temp-option').forEach(option => {
             option.addEventListener('click', function() {
                 document.querySelectorAll('.temp-option').forEach(opt => opt.classList.remove('active'));
@@ -697,7 +807,6 @@
             });
         });
 
-        // 자동완성 기능
         let currentFocus = -1;
 
         document.getElementById('drink-input').addEventListener('input', function(e) {
@@ -738,13 +847,13 @@
             let x = document.getElementById('autocomplete-list');
             if (x) x = x.getElementsByTagName('div');
             
-            if (e.keyCode == 40) { // DOWN
+            if (e.keyCode == 40) {
                 currentFocus++;
                 addActive(x);
-            } else if (e.keyCode == 38) { // UP
+            } else if (e.keyCode == 38) {
                 currentFocus--;
                 addActive(x);
-            } else if (e.keyCode == 13) { // ENTER
+            } else if (e.keyCode == 13) {
                 e.preventDefault();
                 if (currentFocus > -1) {
                     if (x) x[currentFocus].click();
@@ -781,7 +890,6 @@
             closeAllLists(e.target);
         });
 
-        // 초기 화면 업데이트
         updateDisplay();
     </script>
 </body>
