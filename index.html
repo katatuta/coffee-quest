@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="커피퀘스트 서울점 월간 이용권 관리 앱">
+    <meta name="theme-color" content="#667eea">
+    <title>커피퀘스트 이용권 관리</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="커피퀘스트">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 24px;
+            flex: 1;
+        }
+
+        .settings-btn, .calendar-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            padding: 0;
+            margin: 0;
+        }
+
+        .settings-btn:hover, .calendar-btn:hover {
+            background: #e0e0e0;
+            transform: none;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .sync-status {
+            text-align: center;
+            padding: 8px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .sync-status.syncing {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .sync-status.offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .balance-info {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .temp-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .temp-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        .temp-option:hover {
+            border-color: #667eea;
+        }
+
+        .temp-option.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .temp-option input {
+            display: none;
+        }
+
+        .quantity-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .quantity-label {
+            flex-shrink: 0;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f8f9ff;
+            padding: 8px 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .quantity-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quantity-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .quantity-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quantity-display {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .category-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .category-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: none;
+        }
+
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .autocomplete-items div {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .autocomplete-items div:hover {
+            background-color: #f8f9ff;
+        }
+
+        .autocomplete-active {
+            background-color: #667eea !important;
+            color: white !important;
+        }
+
+        .drink-name {
+            font-weight: 500;
+        }
+
+        .drink-price {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .autocomplete-active .drink-price {
+            color: white;
+        }
+
+        .temp-badge {
+            font-size: 11px;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        .autocomplete-active .temp-badge {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .price-preview {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-btn {
+            background: #f44336;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .view-toggle-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+            margin: 0;
+        }
+
+        .view-toggle-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-item {
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-drink {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .history-temp {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        .history-quantity {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #ff9800;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .history-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .empty-history {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            font-size: 14px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #ffc107;
+        }
+
+        /* 달력 뷰 */
+        .calendar-view {
+            display: none;
+        }
+
+        .calendar-view.active {
+            display: block;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+
+        .calendar-month {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+            margin: 0;
+        }
+
+        .calendar-nav-btn:hover {
+            background: #e0e0e0;
+            transform: none;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            padding: 8px;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+            position: relative;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-day:hover {
+            background: #e8f0ff;
+        }
+
+        .calendar-day.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .calendar-day.has-usage {
+            background: #ffeb3b;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #667eea;
+        }
+
+        .calendar-usage-amount {
+            font-size: 10px;
+            margin-top: 2px;
+            opacity: 0.8;
+            color: #d32f2f;
+            font-weight: 700;
+        }
+
+        .calendar-detail {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .calendar-detail.show {
+            display: block;
+        }
+
+        .calendar-detail-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .calendar-detail-item {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-detail-drink {
+            font-size: 13px;
+            color: #333;
+        }
+
+        .calendar-detail-price {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-section {
+            margin-bottom: 25px;
+        }
+
+        .modal-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .pin-display {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .pin-code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 8px;
+        }
+
+        .pin-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .close-btn {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            .balance-amount {
+                font-size: 32px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="calendar-btn" onclick="toggleCalendar()">📅</button>
+            <h1>☕ 커피퀘스트 이용권</h1>
+            <button class="settings-btn" onclick="openSettings()">⚙️</button>
+        </div>
+        <p class="subtitle">서울점</p>
+
+        <div id="sync-status" class="sync-status" style="display: none;">
+            <span id="sync-text">🔄 동기화 중...</span>
+        </div>
+
+        <div class="balance-card">
+            <div class="balance-label">이번 달 남은 금액</div>
+            <div class="balance-amount" id="balance">50,000원</div>
+            <div class="balance-info" id="month-info">2025년 1월</div>
+        </div>
+
+        <div id="warning-container"></div>
+
+        <div class="input-group">
+            <label>온도 선택</label>
+            <div class="temp-selector">
+                <label class="temp-option active">
+                    <input type="radio" name="temp" value="hot" checked>
+                    🔥 HOT
+                </label>
+                <label class="temp-option">
+                    <input type="radio" name="temp" value="iced">
+                    ❄️ ICED
+                </label>
+            </div>
+        </div>
+
+        <div class="quantity-selector">
+            <span class="quantity-label">수량</span>
+            <div class="quantity-controls">
+                <button class="quantity-btn" onclick="changeQuantity(-1)">−</button>
+                <span class="quantity-display" id="quantity-display">1</span>
+                <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>카테고리 선택</label>
+            <div class="category-selector">
+                <button class="category-btn active" onclick="selectCategory('COFFEE')">☕ COFFEE</button>
+                <button class="category-btn" onclick="selectCategory('BEVERAGE')">🥤 BEVERAGE</button>
+                <button class="category-btn" onclick="selectCategory('TEA')">🍵 TEA</button>
+                <button class="category-btn" onclick="selectCategory('JUICE')">🧃 JUICE</button>
+                <button class="category-btn" onclick="selectCategory('SMOOTHIE')">🍹 SMOOTHIE</button>
+                <button class="category-btn" onclick="selectCategory('ETC')">🍪 기타</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="drink-input">메뉴 선택</label>
+            <input type="text" id="drink-input" placeholder="메뉴 이름을 입력하세요" autocomplete="off">
+        </div>
+
+        <div class="price-preview" id="price-preview">
+            메뉴를 선택하세요
+        </div>
+
+        <button id="add-btn" onclick="addDrink()" disabled>사용하기</button>
+        <button class="reset-btn" onclick="resetMonth()">이번 달 초기화</button>
+
+        <div class="history">
+            <div class="history-header">
+                <div class="history-title">📋 이용 내역</div>
+                <div class="view-toggle">
+                    <button class="view-toggle-btn active" onclick="switchView('list')">목록</button>
+                    <button class="view-toggle-btn" onclick="switchView('calendar')">달력</button>
+                </div>
+            </div>
+            
+            <div id="list-view" class="list-view">
+                <div id="history-list">
+                    <div class="empty-history">아직 사용 내역이 없습니다</div>
+                </div>
+            </div>
+
+            <div id="calendar-view" class="calendar-view">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" onclick="changeMonth(-1)">◀</button>
+                    <div class="calendar-month" id="calendar-month">2025년 1월</div>
+                    <button class="calendar-nav-btn" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div class="calendar-weekday">일</div>
+                    <div class="calendar-weekday">월</div>
+                    <div class="calendar-weekday">화</div>
+                    <div class="calendar-weekday">수</div>
+                    <div class="calendar-weekday">목</div>
+                    <div class="calendar-weekday">금</div>
+                    <div class="calendar-weekday">토</div>
+                </div>
+                <div class="calendar-days" id="calendar-days"></div>
+                <div class="calendar-detail" id="calendar-detail"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">⚙️ 설정</div>
+            
+            <div class="modal-section">
+                <div class="modal-section-title">내 PIN 코드</div>
+                <div class="pin-display">
+                    <div class="pin-code" id="my-pin">----</div>
+                    <div class="pin-hint">다른 기기에서 이 코드를 입력하세요</div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">다른 기기 연동</div>
+                <input type="text" id="sync-pin-input" placeholder="4자리 PIN 코드 입력" maxlength="4">
+                <button class="modal-btn" onclick="syncWithPin()">연동하기</button>
+            </div>
+
+            <button class="modal-btn close-btn" onclick="closeSettings()">닫기</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let firebaseInitialized = false;
+        let database = null;
+
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                firebaseInitialized = true;
+                console.log("Firebase 연결 성공!");
+            } else {
+                console.log("Firebase 설정이 필요합니다. 로컬 모드로 작동합니다.");
+            }
+        } catch (error) {
+            console.log("Firebase 초기화 실패:", error);
+        }
+
+        // 업데이트된 메뉴 데이터
+        const menuData = {
+            COFFEE: {
+                "아메리카노": { hot: 4000, iced: 4000 },
+                "카페라떼": { hot: 4500, iced: 4500 },
+                "카푸치노": { hot: 4500, iced: 4500 },
+                "카페모카": { hot: 5000, iced: 5000 },
+                "바닐라라떼": { hot: 5000, iced: 5000 },
+                "헤이즐넛라떼": { hot: 5000, iced: 5000 },
+                "카라멜마끼아또": { hot: 5000, iced: 5000 },
+                "더치커피": { hot: 5000, iced: 5000 },
+                "더치라떼": { hot: 5500 },
+                "더치바닐라라떼": { hot: 6500 },
+                "플랫화이트": { hot: 4500 },
+                "바닐라플랫화이트": { hot: 5000 },
+                "디카페인아메리카노": { hot: 4500, iced: 4500 },
+                "디카페인라떼": { hot: 5000, iced: 5000 },
+                "디카페인바닐라라떼": { hot: 5500, iced: 5500 },
+                "디카페인헤이즐넛라떼": { hot: 5500, iced: 5500 },
+                "에스프레소": { hot: 4000 },
+                "에스프레소마끼아또": { hot: 4500 },
+                "에스프레소콘파나": { hot: 4500 },
+                "아포가토": { hot: 5500 },
+                "아인슈페너": { hot: 5500 },
+                "화이트라떼": { hot: 5500 },
+                "흑당블루무": { hot: 6000 }
+            },
+            BEVERAGE: {
+                "리얼딸기초코": { hot: 5000, iced: 5000 },
+                "녹차라떼": { hot: 5000, iced: 5000 },
+                "고구마라떼": { hot: 6000, iced: 6000 },
+                "미숫가루": { iced: 5500 },
+                "딸기라떼": { iced: 5500 },
+                "레몬에이드": { iced: 5500 },
+                "자몽에이드": { iced: 5500 },
+                "유자에이드": { iced: 5500 },
+                "오미자에이드": { iced: 6500 },
+                "아이스티": { iced: 4000 },
+                "아이스티샷": { iced: 5000 }
+            },
+            TEA: {
+                "유자차": { hot: 4000, iced: 4500 },
+                "생강차": { hot: 4000, iced: 4500 },
+                "오미자차": { hot: 5000, iced: 5500 },
+                "대추차": { hot: 6000, iced: 6500 },
+                "얼그레이": { hot: 4000, iced: 4500 },
+                "캐모마일": { hot: 4000, iced: 4500 },
+                "페퍼민트": { hot: 4000, iced: 4500 },
+                "루이보스": { hot: 4000, iced: 4500 },
+                "자스민": { hot: 4000, iced: 4500 },
+                "히비스커스": { hot: 6000, iced: 6500 },
+                "레몬티": { hot: 5000, iced: 5000 },
+                "자몽티": { hot: 5000, iced: 5000 },
+                "허니그린티": { hot: 4500, iced: 5000 },
+                "토끌블티": { hot: 5500, iced: 6000 }
+            },
+            JUICE: {
+                "토마토주스": { iced: 7000 },
+                "키위주스": { iced: 7000 },
+                "감귤주스": { iced: 7000 }
+            },
+            SMOOTHIE: {
+                "요거트플레인스무디": { iced: 5500 },
+                "요거트블루베리스무디": { iced: 5500 },
+                "요거트망고스무디": { iced: 5500 },
+                "딸기스무디": { iced: 6000 },
+                "그린티크러쉬": { iced: 6500 }
+            },
+            ETC: {
+                "샌드위치": { hot: 7000 },
+                "초코칩쿠키": { hot: 2500 },
+                "초코버터쿠키": { hot: 4500 },
+                "크랜베리스콘": { hot: 4500 },
+                "얼그레이스콘": { hot: 4500 }
+            }
+        };
+
+        const STORAGE_KEY = 'coffeeQuest';
+        const PIN_KEY = 'coffeeQuestPin';
+
+        let data = loadData();
+        let selectedDrink = null;
+        let selectedPrice = null;
+        let quantity = 1;
+        let currentCategory = 'COFFEE';
+        let myPin = getOrCreatePin();
+        let syncedPin = null;
+        let currentView = 'list';
+        let calendarYear = new Date().getFullYear();
+        let calendarMonth = new Date().getMonth();
+        let currentFocus = -1;
+
+        function getOrCreatePin() {
+            let pin = localStorage.getItem(PIN_KEY);
+            if (!pin) {
+                pin = Math.floor(1000 + Math.random() * 9000).toString();
+                localStorage.setItem(PIN_KEY, pin);
+            }
+            return pin;
+        }
+
+        function setupFirebaseSync() {
+            if (!firebaseInitialized || !database) {
+                showSyncStatus('offline', '⚠️ 로컬 모드 (Firebase 설정 필요)');
+                return;
+            }
+
+            const usedPin = syncedPin || myPin;
+            const dataRef = database.ref('users/' + usedPin);
+
+            showSyncStatus('syncing', '🔄 동기화 중...');
+
+            dataRef.on('value', (snapshot) => {
+                const remoteData = snapshot.val();
+                if (remoteData) {
+                    data = remoteData;
+                    updateDisplay();
+                    showSyncStatus('synced', '✅ 동기화 완료');
+                    setTimeout(() => {
+                        document.getElementById('sync-status').style.display = 'none';
+                    }, 2000);
+                }
+            });
+
+            saveToFirebase();
+        }
+
+        function saveToFirebase() {
+            if (!firebaseInitialized || !database) return;
+            const usedPin = syncedPin || myPin;
+            database.ref('users/' + usedPin).set(data);
+        }
+
+        function showSyncStatus(status, text) {
+            const statusEl = document.getElementById('sync-status');
+            const textEl = document.getElementById('sync-text');
+            
+            statusEl.style.display = 'flex';
+            statusEl.className = 'sync-status ' + status;
+            textEl.textContent = text;
+        }
+
+        function syncWithPin() {
+            const pin = document.getElementById('sync-pin-input').value.trim();
+            
+            if (pin.length !== 4 || !/^\d+$/.test(pin)) {
+                alert('올바른 4자리 PIN 코드를 입력하세요.');
+                return;
+            }
+
+            if (pin === myPin) {
+                alert('이미 연동된 코드입니다.');
+                return;
+            }
+
+            if (!firebaseInitialized) {
+                alert('Firebase 설정이 필요합니다. 설정 후 다시 시도하세요.');
+                return;
+            }
+
+            syncedPin = pin;
+            localStorage.setItem('syncedPin', pin);
+            
+            closeSettings();
+            setupFirebaseSync();
+            alert('다른 기기와 연동되었습니다!');
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                if (parsed.month !== currentMonth || parsed.year !== currentYear) {
+                    const carryOver = parsed.balance < 0 ? parsed.balance : 0;
+                    return {
+                        balance: 50000 + carryOver,
+                        history: [],
+                        month: currentMonth,
+                        year: currentYear
+                    };
+                }
+                return parsed;
+            }
+            return {
+                balance: 50000,
+                history: [],
+                month: new Date().getMonth(),
+                year: new Date().getFullYear()
+            };
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            saveToFirebase();
+        }
+
+        function selectCategory(category) {
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 입력창 초기화
+            const input = document.getElementById('drink-input');
+            input.value = '';
+            selectedDrink = null;
+            selectedPrice = null;
+            updatePricePreview();
+            
+            // 입력창이 포커스되어 있으면 새 메뉴 표시
+            if (document.activeElement === input) {
+                showMenuList('');
+            }
+        }
+
+        function changeQuantity(delta) {
+            quantity = Math.max(1, Math.min(99, quantity + delta));
+            document.getElementById('quantity-display').textContent = quantity;
+            updatePricePreview();
+        }
+
+        function updateDisplay() {
+            const balanceEl = document.getElementById('balance');
+            const monthInfoEl = document.getElementById('month-info');
+            const warningContainer = document.getElementById('warning-container');
+            
+            balanceEl.textContent = data.balance.toLocaleString() + '원';
+            balanceEl.style.color = data.balance < 0 ? '#ff5252' : 'white';
+            
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            monthInfoEl.textContent = `${data.year}년 ${monthNames[data.month]}`;
+            
+            if (data.balance < 0) {
+                warningContainer.innerHTML = `
+                    <div class="warning">
+                        ⚠️ ${Math.abs(data.balance).toLocaleString()}원 초과 사용 중입니다. 다음 달 이용권에서 차감됩니다.
+                    </div>
+                `;
+            } else {
+                warningContainer.innerHTML = '';
+            }
+            
+            const historyList = document.getElementById('history-list');
+            if (data.history.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">아직 사용 내역이 없습니다</div>';
+            } else {
+                historyList.innerHTML = data.history.map(item => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-drink">
+                                ${item.name}
+                                <span class="history-temp">${item.temp === 'hot' ? 'HOT' : 'ICED'}</span>
+                                ${item.quantity > 1 ? `<span class="history-quantity">×${item.quantity}</span>` : ''}
+                            </div>
+                            <div class="history-date">${item.date}</div>
+                        </div>
+                        <div class="history-price">-${item.price.toLocaleString()}원</div>
+                    </div>
+                `).join('');
+            }
+
+            if (currentView === 'calendar') {
+                renderCalendar();
+            }
+        }
+
+        function getSelectedTemp() {
+            return document.querySelector('input[name="temp"]:checked').value;
+        }
+
+        function updatePricePreview() {
+            const input = document.getElementById('drink-input');
+            const drinkName = input.value.trim();
+            const temp = getSelectedTemp();
+            const pricePreview = document.getElementById('price-preview');
+            const addBtn = document.getElementById('add-btn');
+            
+            if (!drinkName) {
+                pricePreview.textContent = '메뉴를 선택하세요';
+                pricePreview.style.color = '#999';
+                addBtn.disabled = true;
+                selectedDrink = null;
+                selectedPrice = null;
+                return;
+            }
+            
+            // 현재 카테고리의 메뉴에서 찾기
+            const items = menuData[currentCategory];
+            if (items[drinkName]) {
+                const prices = items[drinkName];
+                const price = prices[temp];
+                
+                if (price !== undefined) {
+                    selectedDrink = drinkName;
+                    selectedPrice = price;
+                    const totalPrice = price * quantity;
+                    
+                    pricePreview.innerHTML = `
+                        <span style="color: #333;">${drinkName}</span>
+                        ${quantity > 1 ? `<span style="color: #ff9800; margin: 0 5px;">×${quantity}</span>` : ''}
+                        <span style="margin: 0 10px;">•</span>
+                        <span style="color: #667eea; font-size: 18px; font-weight: 700;">${totalPrice.toLocaleString()}원</span>
+                        ${quantity > 1 ? `<span style="color: #999; font-size: 12px; margin-left: 5px;">(${price.toLocaleString()}원/개)</span>` : ''}
+                        <span style="margin: 0 10px;">•</span>
+                        <span style="color: #999; font-size: 12px;">${temp === 'hot' ? '🔥 HOT' : '❄️ ICED'}</span>
+                    `;
+                    addBtn.disabled = false;
+                } else {
+                    // 다른 온도로 제공 가능한지 확인
+                    const otherTemp = temp === 'hot' ? 'iced' : 'hot';
+                    const otherPrice = prices[otherTemp];
+                    
+                    if (otherPrice !== undefined) {
+                        pricePreview.textContent = `${drinkName}은(는) ${otherTemp === 'hot' ? 'HOT' : 'ICED'}으로만 제공됩니다`;
+                        pricePreview.style.color = '#f44336';
+                        addBtn.disabled = true;
+                        selectedDrink = null;
+                        selectedPrice = null;
+                    } else {
+                        pricePreview.textContent = '메뉴에 없는 음료입니다';
+                        pricePreview.style.color = '#f44336';
+                        addBtn.disabled = true;
+                        selectedDrink = null;
+                        selectedPrice = null;
+                    }
+                }
+            } else {
+                pricePreview.textContent = '메뉴에 없는 음료입니다';
+                pricePreview.style.color = '#f44336';
+                addBtn.disabled = true;
+                selectedDrink = null;
+                selectedPrice = null;
+            }
+        }
+
+        function addDrink() {
+            if (!selectedDrink || selectedPrice === null) {
+                alert('메뉴를 선택해주세요.');
+                return;
+            }
+            
+            const temp = getSelectedTemp();
+            const totalPrice = selectedPrice * quantity;
+            
+            data.balance -= totalPrice;
+            
+            const now = new Date();
+            data.history.unshift({
+                name: selectedDrink,
+                price: totalPrice,
+                temp: temp,
+                quantity: quantity,
+                date: `${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`,
+                timestamp: now.getTime()
+            });
+            
+            saveData();
+            updateDisplay();
+            
+            document.getElementById('drink-input').value = '';
+            quantity = 1;
+            document.getElementById('quantity-display').textContent = quantity;
+            updatePricePreview();
+        }
+
+        function resetMonth() {
+            if (confirm('이번 달 이용권을 초기화하시겠습니까? (잔액 50,000원으로 리셋)')) {
+                data.balance = 50000;
+                data.history = [];
+                saveData();
+                updateDisplay();
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (view === 'list') {
+                document.getElementById('list-view').style.display = 'block';
+                document.getElementById('calendar-view').classList.remove('active');
+            } else {
+                document.getElementById('list-view').style.display = 'none';
+                document.getElementById('calendar-view').classList.add('active');
+                renderCalendar();
+            }
+        }
+
+        function toggleCalendar() {
+            const currentActive = document.querySelector('.view-toggle-btn.active');
+            if (currentActive.textContent === '목록') {
+                document.querySelectorAll('.view-toggle-btn')[1].click();
+            } else {
+                document.querySelectorAll('.view-toggle-btn')[0].click();
+            }
+        }
+
+        function changeMonth(delta) {
+            calendarMonth += delta;
+            if (calendarMonth < 0) {
+                calendarMonth = 11;
+                calendarYear--;
+            } else if (calendarMonth > 11) {
+                calendarMonth = 0;
+                calendarYear++;
+            }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            document.getElementById('calendar-month').textContent = `${calendarYear}년 ${monthNames[calendarMonth]}`;
+
+            const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+            const lastDate = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+            const today = new Date();
+            
+            // 날짜별 사용 금액 집계
+            const dailyUsage = {};
+            data.history.forEach(item => {
+                if (item.timestamp) {
+                    const date = new Date(item.timestamp);
+                    if (date.getFullYear() === calendarYear && date.getMonth() === calendarMonth) {
+                        const day = date.getDate();
+                        if (!dailyUsage[day]) {
+                            dailyUsage[day] = { total: 0, items: [] };
+                        }
+                        dailyUsage[day].total += item.price;
+                        dailyUsage[day].items.push(item);
+                    }
+                }
+            });
+
+            let html = '';
+            
+            // 빈 칸
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            // 날짜
+            for (let day = 1; day <= lastDate; day++) {
+                const isToday = today.getDate() === day && 
+                               today.getMonth() === calendarMonth && 
+                               today.getFullYear() === calendarYear;
+                const hasUsage = dailyUsage[day];
+                const todayClass = isToday ? 'today' : '';
+                const usageClass = hasUsage ? 'has-usage' : '';
+                
+                html += `
+                    <div class="calendar-day ${todayClass} ${usageClass}" 
+                         onclick="showDayDetail(${day}, ${JSON.stringify(hasUsage ? dailyUsage[day].items : []).replace(/"/g, '&quot;')})">
+                        <div>${day}</div>
+                        ${hasUsage ? `<div class="calendar-usage-amount">-${hasUsage.total.toLocaleString()}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('calendar-days').innerHTML = html;
+        }
+
+        function showDayDetail(day, items) {
+            const detail = document.getElementById('calendar-detail');
+            
+            if (items.length === 0) {
+                detail.classList.remove('show');
+                return;
+            }
+
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            
+            let html = `
+                <div class="calendar-detail-title">${calendarYear}년 ${monthNames[calendarMonth]} ${day}일</div>
+            `;
+            
+            items.forEach(item => {
+                html += `
+                    <div class="calendar-detail-item">
+                        <div class="calendar-detail-drink">
+                            ${item.name}
+                            ${item.temp === 'hot' ? '🔥' : '❄️'}
+                            ${item.quantity > 1 ? `×${item.quantity}` : ''}
+                        </div>
+                        <div class="calendar-detail-price">-${item.price.toLocaleString()}원</div>
+                    </div>
+                `;
+            });
+            
+            detail.innerHTML = html;
+            detail.classList.add('show');
+        }
+
+        function openSettings() {
+            document.getElementById('my-pin').textContent = myPin;
+            document.getElementById('settings-modal').classList.add('show');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('show');
+            document.getElementById('sync-pin-input').value = '';
+        }
+
+        // 온도 선택 이벤트
+        document.querySelectorAll('.temp-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.temp-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                this.querySelector('input').checked = true;
+                updatePricePreview();
+                
+                // 입력창이 포커스되어 있으면 메뉴 리스트 새로고침
+                const input = document.getElementById('drink-input');
+                if (document.activeElement === input) {
+                    showMenuList(input.value);
+                }
+            });
+        });
+
+        // 메뉴 리스트 표시 함수
+        function showMenuList(filterValue = '') {
+            closeAllLists();
+            currentFocus = -1;
+            
+            const temp = getSelectedTemp();
+            const autocompleteDiv = document.createElement('div');
+            autocompleteDiv.setAttribute('id', 'autocomplete-list');
+            autocompleteDiv.setAttribute('class', 'autocomplete-items');
+            document.getElementById('drink-input').parentNode.appendChild(autocompleteDiv);
+            
+            const items = menuData[currentCategory];
+            for (const [name, prices] of Object.entries(items)) {
+                // 필터링 (입력값이 있으면 필터링, 없으면 전체 표시)
+                if (!filterValue || name.includes(filterValue)) {
+                    // 온도 제약 없이 모든 메뉴 표시
+                    const price = prices[temp] || prices[temp === 'hot' ? 'iced' : 'hot'];
+                    const availableTemp = prices[temp] ? temp : (temp === 'hot' ? 'iced' : 'hot');
+                    
+                    if (price !== undefined) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.innerHTML = `
+                            <span class="drink-name">${name} <span class="temp-badge">${availableTemp === 'hot' ? 'HOT' : 'ICED'}</span></span>
+                            <span class="drink-price">${price.toLocaleString()}원</span>
+                        `;
+                        itemDiv.addEventListener('click', function() {
+                            document.getElementById('drink-input').value = name;
+                            closeAllLists();
+                            updatePricePreview();
+                        });
+                        autocompleteDiv.appendChild(itemDiv);
+                    }
+                }
+            }
+        }
+
+        // 입력창 포커스 시 전체 메뉴 표시
+        document.getElementById('drink-input').addEventListener('focus', function(e) {
+            showMenuList(this.value);
+        });
+
+        // 입력 시 필터링된 메뉴 표시
+        document.getElementById('drink-input').addEventListener('input', function(e) {
+            const val = this.value;
+            updatePricePreview();
+            showMenuList(val);
+        });
+
+        document.getElementById('drink-input').addEventListener('keydown', function(e) {
+            let x = document.getElementById('autocomplete-list');
+            if (x) x = x.getElementsByTagName('div');
+            
+            if (e.keyCode == 40) {
+                currentFocus++;
+                addActive(x);
+            } else if (e.keyCode == 38) {
+                currentFocus--;
+                addActive(x);
+            } else if (e.keyCode == 13) {
+                e.preventDefault();
+                if (currentFocus > -1) {
+                    if (x) x[currentFocus].click();
+                } else if (selectedDrink && selectedPrice !== null) {
+                    addDrink();
+                }
+            }
+        });
+
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add('autocomplete-active');
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) {
+                x[i].classList.remove('autocomplete-active');
+            }
+        }
+
+        function closeAllLists(elmnt) {
+            const x = document.getElementsByClassName('autocomplete-items');
+            for (let i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != document.getElementById('drink-input')) {
+                    x[i].parentNode.removeChild(x[i]);
+                }
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            closeAllLists(e.target);
+        });
+
+        updateDisplay();
+
+        const savedSyncPin = localStorage.getItem('syncedPin');
+        if (savedSyncPin) {
+            syncedPin = savedSyncPin;
+        }
+
+        setupFirebaseSync();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => console.log('ServiceWorker registered'))
+                    .catch(err => console.log('ServiceWorker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
